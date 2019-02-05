@@ -3,7 +3,7 @@
   Plugin Name: Update WP Page
   Plugin URI: https://github.com/hiorgserver/update_wp_page
   Description: Ersetzt Seiteninhalte
-  Version: 0.1
+  Version: 0.2
   Author: HiOrg Server GmbH
   Author URI: http://www.hiorg-server.de
   License: MIT
@@ -16,14 +16,14 @@ function update_wp_page_init() {
 }
 
 function update_wp_page_fetchdata() {
-//    $url = "http://www.hiorg-server.de/info2/referenzen.php?json=1";
-    $url = "https://my-json-server.typicode.com/hiorgserver/update_wp_page/db";
+    $url = "http://www.hiorg-server.de/info2/referenzen.php?zahlen=1";
+//    $url = "https://raw.githubusercontent.com/hiorgserver/update_wp_page/master/db.json";
     $response = wp_remote_get($url);
 
     if (is_array($response) && !is_wp_error($response)) {
         $data = $response["body"];
         if (!empty($data)) {
-            $ret = json_decode($data);
+            $ret = json_decode($data, true);
             if (JSON_ERROR_NONE === json_last_error()) {
                 return $ret;
             }
@@ -34,7 +34,7 @@ function update_wp_page_fetchdata() {
 
 function update_wp_page_buildreplaceary($json) {
     if ($json["status"]=="OK") {
-        $zuordnung = ["ue821" => "orga", "ue80b" => "user", "ue83d" => "veranst"];
+        $zuordnung = ["ue821" => "orga", "ue80b" => "user", "ue85b" => "veranst"];
         $ret = [];
         foreach ($zuordnung as $icon => $key) {
             $pattern = "/(\\[av_animated_numbers[^\\]]* number=')([^']+)('[^\\]]* icon='$icon')/i";
@@ -51,10 +51,15 @@ function update_wp_page_replacedata($page_id, $replace) {
     if ($post instanceof WP_Post) {
         $content = $post->post_content;
         if (!empty($content)) {
+            $vorher = $content;
             foreach ($replace as $pattern => $replacement) {
                 $content = preg_replace($pattern, $replacement, $content);
             }
-            $id = wp_update_post(array("ID" => $page_id, "post_content" => $content), true);
+            if ($vorher==$content) {
+                return true;
+            }
+            $post = array("ID" => $page_id, "post_content" => $content);
+            $id = wp_update_post($post, true);
             return !is_wp_error($id);
         }
     }
@@ -69,7 +74,7 @@ function update_wp_page_process($atts) {
 
     $data = update_wp_page_fetchdata();
 
-    if (false === $data) {
+    if (!is_array($data)) {
         return "ERROR: konnte Daten nicht abrufen";
     }
 
@@ -79,5 +84,11 @@ function update_wp_page_process($atts) {
         return "ERROR: Daten konnten nicht gelesen werden";
     }
 
-    return update_wp_page_replacedata($page_id, $replace);
+    $success = update_wp_page_replacedata($page_id, $replace);
+
+    if (!$success) {
+        return "ERROR: Laden, Ersetzen oder Speichern hat nicht funktioniert";
+    }
+
+    return "OK";
 }

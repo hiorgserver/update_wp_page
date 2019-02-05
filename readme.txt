@@ -32,5 +32,7 @@ nothing here
 Gute Nachrichten! Da dieses Plugin unter der MIT veröffentlicht wurde, kann es sowohl privat als auch kommerziell genutzt werden.
  
 == Changelog ==
+= v0.2 (2019-02-05) =
+* Erste funktionierende Version
 = v0.1 (2019-01-29) =
 * Erste Veröffentlichung des Plugins.
